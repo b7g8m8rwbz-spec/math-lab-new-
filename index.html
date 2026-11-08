@@ -1,0 +1,264 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مختبر الرياضيات الذكي</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:20px;
+ background:#101A35;color:white;
+ font-family:Arial,sans-serif;text-align:center;
+}
+.container{
+ max-width:650px;margin:25px auto;
+ padding:25px;background:#192747;
+ border:1px solid #287BFF;border-radius:22px;
+}
+h1{color:#C5CEDD}
+h2{color:#9875FF}
+p{line-height:1.8;color:#C5CEDD}
+button{
+ width:100%;padding:15px;margin:8px 0;
+ border:0;border-radius:12px;
+ background:#287BFF;color:white;
+ font-size:17px;font-weight:bold;
+ cursor:pointer;
+}
+.option{background:#263B62}
+button:disabled{opacity:.5}
+input,select{
+ width:100%;padding:14px;margin:12px 0;
+ border-radius:10px;border:1px solid #287BFF;
+ background:#101A35;color:white;font-size:17px;
+}
+.timer{font-size:30px;color:#9875FF;margin:20px}
+.hidden{display:none}
+.score{font-size:25px;color:#9875FF}
+table{width:100%;border-collapse:collapse;margin-top:20px}
+td,th{padding:12px;border-bottom:1px solid #526B98}
+th{color:#8FB8FF}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>مختبر الرياضيات الذكي</h1>
+<p>دمج الرياضيات بالذكاء الاصطناعي من خلال تجارب تفاعلية</p>
+
+<div id="home">
+<h2>🏆 تحدي الشعب الثلاث</h2>
+<p>ثلاث شعب تتنافس على لقب بطلة مختبر الرياضيات الذكي!</p>
+<button onclick="begin()">ابدئي المسابقة</button>
+</div>
+
+<div id="game" class="hidden">
+<h2 id="team"></h2>
+<p id="progress"></p>
+<div class="timer" id="timer">15</div>
+<h2 id="question"></h2>
+<div id="answers"></div>
+<p id="feedback"></p>
+</div>
+
+<div id="sectionResult" class="hidden">
+<h2>انتهى تحدي الشعبة!</h2>
+<div class="score" id="sectionScore"></div>
+<p id="sectionTime"></p>
+<button onclick="nextSection()">انتقال إلى الشعبة التالية</button>
+</div>
+
+<div id="final" class="hidden">
+<h2>🏆 النتائج النهائية</h2>
+<p>ترتيب الشعب حسب الإجابات الصحيحة ثم الوقت</p>
+<div id="resultsTable"></div>
+<h2 id="winner"></h2>
+<p>شكرًا لمشاركتكن في مختبر الرياضيات الذكي</p>
+<button onclick="location.reload()">إعادة المسابقة</button>
+</div>
+
+</div>
+
+<script>
+const sections=["101","102","103"];
+
+const questions=[
+[
+{q:"ما العدد التالي؟ 2، 4، 6، 8، ؟",a:["9","10","12"],c:1},
+{q:"كم حاصل 7 × 8؟",a:["54","56","64"],c:1},
+{q:"كم مجموع زوايا المثلث؟",a:["90°","180°","360°"],c:1}
+],
+[
+{q:"ما العدد الزوجي؟",a:["13","17","24"],c:2},
+{q:"كم حاصل 100 ÷ 4؟",a:["20","25","40"],c:1},
+{q:"كم عدد أضلاع الشكل السداسي؟",a:["5","6","8"],c:1}
+],
+[
+{q:"ما العدد الأكبر؟",a:["0.8","0.5","0.3"],c:0},
+{q:"ما حاصل 15 + 27؟",a:["32","42","52"],c:1},
+{q:"كم ضلعًا للمربع؟",a:["3","4","5"],c:1}
+]
+];
+
+let sectionIndex=0;
+let questionIndex=0;
+let score=0;
+let seconds=15;
+let timer=null;
+let startTime=0;
+let totalTime=0;
+let results=[];
+
+function show(id){
+ ["home","game","sectionResult","final"].forEach(x=>
+ document.getElementById(x).classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+}
+
+function begin(){
+ sectionIndex=0;
+ results=[];
+ show("game");
+ startSection();
+}
+
+function startSection(){
+ questionIndex=0;
+ score=0;
+ totalTime=0;
+ document.getElementById("team").textContent=
+ "الشعبة "+sections[sectionIndex];
+ show("game");
+ showQuestion();
+}
+
+function showQuestion(){
+ clearInterval(timer);
+
+ if(questionIndex>=3){
+ finishSection();
+ return;
+ }
+
+ seconds=15;
+ startTime=Date.now();
+
+ document.getElementById("progress").textContent=
+ "السؤال "+(questionIndex+1)+" من 3";
+
+ document.getElementById("timer").textContent="15 ثانية";
+ document.getElementById("feedback").textContent="";
+
+ const q=questions[sectionIndex][questionIndex];
+ document.getElementById("question").textContent=q.q;
+
+ const area=document.getElementById("answers");
+ area.innerHTML="";
+
+ q.a.forEach((answer,i)=>{
+ const b=document.createElement("button");
+ b.className="option";
+ b.textContent=answer;
+ b.onclick=()=>answerQuestion(i);
+ area.appendChild(b);
+ });
+
+ timer=setInterval(()=>{
+ seconds--;
+ document.getElementById("timer").textContent=seconds+" ثانية";
+ if(seconds<=0) answerQuestion(-1);
+ },1000);
+}
+
+function answerQuestion(choice){
+ if(!timer)return;
+ clearInterval(timer);
+ timer=null;
+
+ totalTime+=Math.min(15,Math.ceil((Date.now()-startTime)/1000));
+
+ const q=questions[sectionIndex][questionIndex];
+
+ if(choice===q.c){
+ score++;
+ document.getElementById("feedback").textContent="إجابة صحيحة! ⭐";
+ }else{
+ document.getElementById("feedback").textContent=
+ choice===-1?"انتهى الوقت!":"إجابة غير صحيحة";
+ }
+
+ document.querySelectorAll("#answers button").forEach(b=>b.disabled=true);
+
+ const next=document.createElement("button");
+ next.textContent=questionIndex===2?"عرض نتيجة الشعبة":"السؤال التالي";
+ next.onclick=()=>{
+ questionIndex++;
+ showQuestion();
+ };
+ document.getElementById("answers").appendChild(next);
+}
+
+function finishSection(){
+ clearInterval(timer);
+
+ results.push({
+ name:sections[sectionIndex],
+ score:score,
+ time:totalTime
+ });
+
+ document.getElementById("sectionScore").textContent=
+ score+" من 3 إجابات صحيحة";
+
+ document.getElementById("sectionTime").textContent=
+ "الوقت المستغرق: "+totalTime+" ثانية";
+
+ const btn=document.querySelector("#sectionResult button");
+
+ btn.textContent=sectionIndex===2?
+ "عرض النتائج النهائية":"انتقال إلى الشعبة التالية";
+
+ show("sectionResult");
+}
+
+function nextSection(){
+ sectionIndex++;
+
+ if(sectionIndex<sections.length){
+ startSection();
+ }else{
+ showFinal();
+ }
+}
+
+function showFinal(){
+ show("final");
+
+ const sorted=[...results].sort((a,b)=>
+ b.score-a.score || a.time-b.time
+ );
+
+ let html="<table><tr><th>الترتيب</th><th>الشعبة</th><th>الصحيحة</th><th>الوقت</th></tr>";
+
+ sorted.forEach((r,i)=>{
+ html+="<tr><td>"+(i+1)+"</td><td>"+r.name+
+ "</td><td>"+r.score+"/3</td><td>"+r.time+" ثانية</td></tr>";
+ });
+
+ html+="</table>";
+ document.getElementById("resultsTable").innerHTML=html;
+
+ const top=sorted[0];
+ const tied=sorted.filter(r=>r.score===top.score&&r.time===top.time);
+
+ document.getElementById("winner").textContent=
+ tied.length>1?
+ "تعادل! تستحق الشعبتان لقب بطلات المختبر 🏆":
+ "🏆 الفائزة: الشعبة "+top.name+
+ " — بطلة مختبر الرياضيات الذكي!";
+}
+</script>
+</body>
+</html>
